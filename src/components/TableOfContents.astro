@@ -1,0 +1,13 @@
+---
+import type { MarkdownHeading } from 'astro';
+interface Props { headings: MarkdownHeading[] }
+const { headings } = Astro.props;
+const sections = headings.filter((heading) => heading.depth === 2).map((heading) => {
+  const index = headings.indexOf(heading);
+  const next = headings.findIndex((item, i) => i > index && item.depth === 2);
+  return { ...heading, children: headings.slice(index + 1, next === -1 ? undefined : next).filter((item) => item.depth === 3) };
+});
+---
+<nav class="toc" aria-label="本期目录">
+  {sections.map((section) => <div class="toc-section"><a class="toc-section-title" href={`#${section.slug}`}>{section.text}</a><ol>{section.children.map((heading) => <li><a href={`#${heading.slug}`}>{heading.text.replace(/^\d+[.、．]\s*/, '')}</a></li>)}</ol></div>)}
+</nav>

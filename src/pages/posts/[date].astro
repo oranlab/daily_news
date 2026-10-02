@@ -2,7 +2,7 @@
 import type { GetStaticPaths } from 'astro';
 import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Icon from '../../components/Icon.astro';
+import TableOfContents from '../../components/TableOfContents.astro';
 import { getNews, getMetadata, formatDate, weekday, type NewsEntry } from '../../lib/news';
 export const getStaticPaths = (async () => (await getNews()).map((entry) => ({ params: { date: entry.id }, props: { entry } }))) satisfies GetStaticPaths;
 interface Props { entry: NewsEntry }
@@ -13,17 +13,14 @@ const news = await getNews();
 const index = news.findIndex((item) => item.id === entry.id);
 const newer = news[index - 1];
 const older = news[index + 1];
-const sections = headings.filter((heading) => heading.depth === 2).map((heading) => {
-  const headingIndex = headings.indexOf(heading);
-  const next = headings.findIndex((item, i) => i > headingIndex && item.depth === 2);
-  return { ...heading, children: headings.slice(headingIndex + 1, next === -1 ? undefined : next).filter((item) => item.depth === 3) };
-});
 ---
 <BaseLayout title={post.title} description={post.description} article={{ date: entry.id }}>
+  <div class="article-card card-base">
   <div class="article-breadcrumb"><a href="/archive/">往期归档</a><span>/</span><time datetime={entry.id}>{entry.id}</time></div>
   <header class="article-header"><p class="eyebrow">DAILY BRIEF / {weekday(entry.id)}</p><h1>{post.title}</h1><div class="article-meta"><time datetime={entry.id}>{formatDate(entry.id)}</time><span>{post.worldCount} 条国际 · {post.aiCount} 条 AI</span><span>约 {post.readingMinutes} 分钟阅读</span></div></header>
-  <div class="article-layout">
-    <article class="prose"><Content /><nav class="post-navigation" aria-label="前后期日报">{older ? <a href={getMetadata(older).href}><span>← 上一期</span><strong>{older.id}</strong></a> : <span />}{newer ? <a href={getMetadata(newer).href}><span>下一期 →</span><strong>{newer.id}</strong></a> : <a href="/archive/"><span>继续阅读 →</span><strong>全部归档</strong></a>}</nav></article>
-    <aside class="article-sidebar"><div class="toc"><p class="eyebrow">IN THIS EDITION</p><h2>本期目录</h2><nav aria-label="文章目录">{sections.map((section) => <details open><summary><a href={`#${section.slug}`}>{section.text}</a></summary><ol>{section.children.map((heading) => <li><a href={`#${heading.slug}`}>{heading.text.replace(/^\d+[.、．]\s*/, '')}</a></li>)}</ol></details>)}</nav><a class="text-link" href="#main">回到顶部 ↑</a></div><a class="sidebar-rss" href="/rss.xml"><Icon name="rss" size={18} /><span>把每日新闻放进<br />你的阅读器</span><Icon name="arrow" size={16} /></a></aside>
+  <details class="inline-toc"><summary>本期目录</summary><TableOfContents headings={headings} /></details>
+  <article class="prose custom-md"><Content /></article>
+  <nav class="post-navigation" aria-label="前后期日报">{older ? <a href={getMetadata(older).href}><span>← 上一期</span><strong>{older.id}</strong></a> : <span />}{newer ? <a href={getMetadata(newer).href}><span>下一期 →</span><strong>{newer.id}</strong></a> : <a href="/archive/"><span>继续阅读 →</span><strong>全部归档</strong></a>}</nav>
   </div>
+  <div slot="toc" class="toc-panel"><h2>本期目录</h2><TableOfContents headings={headings} /><a class="text-link" href="#main">回到顶部 ↑</a></div>
 </BaseLayout>

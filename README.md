@@ -1,8 +1,16 @@
 # 每日新闻 · Astro 博客
 
-用 Astro 和 TypeScript 构建的中文静态博客，整理国际要闻与 AI 动态。日报统一存放在 `src/content/YYYY-MM-DD/每日新闻.md`，由 Astro 内容集合自动读取。
+用 Astro 和 TypeScript 构建的中文静态博客，采用 [Fuwari](https://github.com/saicaca/fuwari) 免费开源主题的样式与布局，整理国际要闻与 AI 动态。日报统一存放在 `src/content/YYYY-MM-DD/每日新闻.md`，由 Astro 内容集合自动读取。
 
 包含首页最新一期、文章阅读与目录、前后期导航、日期归档、月份筛选、全文搜索、国际 / AI 分类、深浅主题、RSS、SEO 元信息、结构化数据、站点地图和 404 页面。无需数据库或服务端运行时。
+
+## Fuwari 主题
+
+主题适配保留当前 Astro 7、npm、日期目录内容集合与原有文章 URL。使用 Fuwari 的圆角卡片、左侧资料 / 分类 / 归档栏和可调色相的深浅配色；显示设置可选择浅色、深色、跟随系统及主题色。移动端文章优先展示，侧栏移至页面下方。大屏文章右侧显示目录，其余屏幕可展开正文前的目录。
+
+在 `src/config.ts` 中修改站点标题、副标题、资料名称、简介、头像和默认色相；横幅默认关闭，将 `siteConfig.banner.enable` 改为 `true` 可启用，替换 `banner.src` 可自定义图片。默认头像与可选横幅位于 `public/images/`。
+
+Fuwari 上游版本为 `6d39b0dec41282e7852e23e032998a5789abee28`。主题基础样式保存在 `src/styles/fuwari/`，日报布局与交互适配在现有组件和 `src/styles/global.css` 中；文章解析和搜索继续使用原有实现。原主题 MIT 许可证保留于 `LICENSE.fuwari`，并随静态网站分发到 `/licenses/fuwari.txt`，页脚保留主题链接。
 
 ## 本地开发
 
@@ -109,14 +117,18 @@ PUBLIC_SITE_URL=https://your-blog.vercel.app npm run build
 ```text
 daily_news/
 ├── public/favicon.svg
+├── public/images/           # 头像与可选横幅
+├── public/licenses/fuwari.txt
 ├── src/
+│   ├── config.ts            # Fuwari 外观与资料配置
 │   ├── content/
 │   │   └── YYYY-MM-DD/每日新闻.md  # 日报内容统一存放在这里
 │   ├── content.config.ts      # 日期目录内容集合与可选 frontmatter
 │   ├── lib/news.ts            # 标题、摘要、分类与日期处理
 │   ├── components/            # 图标与日报卡片
 │   ├── layouts/BaseLayout.astro
-│   ├── styles/global.css      # 响应式样式与深浅主题
+│   ├── styles/global.css      # 日报布局与响应式适配
+│   ├── styles/fuwari/         # Fuwari 主题基础样式
 │   └── pages/
 │       ├── index.astro
 │       ├── archive.astro

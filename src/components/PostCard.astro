@@ -2,16 +2,18 @@
 import type { NewsEntry } from '../lib/news';
 import { getMetadata, formatDate, weekday, type Topic } from '../lib/news';
 import Icon from './Icon.astro';
-interface Props { entry: NewsEntry; topic?: Topic }
-const { entry, topic } = Astro.props;
+// Adapted from Fuwari's PostCard (MIT); see LICENSE.fuwari.
+interface Props { entry: NewsEntry; topic?: Topic; latest?: boolean }
+const { entry, topic, latest = false } = Astro.props;
 const post = getMetadata(entry);
 const highlights = post.briefs.filter((brief) => !topic || brief.topic === topic).slice(0, 2);
 ---
-<article class="post-card" data-post-id={entry.id}>
-  <div class="post-card-top"><time datetime={entry.id}>{formatDate(entry.id)}</time><span>{weekday(entry.id)}</span></div>
-  <a class="post-card-link" href={post.href}>
-    <h3>{post.title}</h3>
-    <p>{highlights.map((brief) => brief.title).join('；') || post.description}</p>
-    <div class="post-card-bottom"><span>{post.worldCount} 条国际 · {post.aiCount} 条 AI<span class="reading-time"> · {post.readingMinutes} 分钟</span></span><Icon name="arrow" /></div>
-  </a>
+<article class="post-card card-base" data-post-id={entry.id}>
+  <div class="post-card-content">
+    <h2><a class="post-title" href={post.href}>{post.title}{latest && <span class="latest-badge">最新</span>}</a></h2>
+    <div class="post-card-meta"><time datetime={entry.id}>{formatDate(entry.id)}</time><span>{weekday(entry.id)}</span><a href="/topics/world/">国际新闻</a><a href="/topics/ai/">AI 新闻</a></div>
+    <p class="post-excerpt">{highlights.map((brief) => brief.title).join('；') || post.description}</p>
+    <div class="post-card-bottom"><span>{post.worldCount} 条国际 · {post.aiCount} 条 AI</span><span>约 {post.readingMinutes} 分钟阅读</span></div>
+  </div>
+  <a class="post-enter btn-regular" href={post.href} aria-label={`阅读${post.title}`}><Icon name="arrow" size={24} /></a>
 </article>

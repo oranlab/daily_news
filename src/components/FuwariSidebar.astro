@@ -1,0 +1,116 @@
+---
+// Layout adapted from Fuwari's Profile and sidebar widgets (MIT).
+// Original project: https://github.com/saicaca/fuwari. See LICENSE.fuwari.
+import Icon from './Icon.astro';
+import { profileConfig, siteConfig } from '../config';
+import { getNews, getMetadata, topics, type Topic } from '../lib/news';
+
+const news = await getNews();
+const editions = news.map(getMetadata);
+const briefCount = editions.reduce((sum, edition) => sum + edition.briefs.length, 0);
+const categories = (Object.keys(topics) as Topic[]).map((topic) => ({
+  topic,
+  ...topics[topic],
+  count: editions.filter((edition) => edition.briefs.some((brief) => brief.topic === topic)).length,
+}));
+const months = [...new Set(news.map((entry) => entry.id.slice(0, 7)))].map((month) => ({
+  month,
+  label: `${month.slice(0, 4)} 年 ${Number(month.slice(5))} 月`,
+  count: news.filter((entry) => entry.id.startsWith(month)).length,
+}));
+---
+
+<aside class="fuwari-sidebar" aria-label="博客信息与分类归档">
+  <section class="profile-card card-base" aria-labelledby="profile-name">
+    <a class="profile-avatar" href="/about/" aria-label={`关于${siteConfig.title}`}>
+      <img src={profileConfig.avatar} alt={profileConfig.name} width="160" height="160" />
+    </a>
+    <div class="profile-details">
+      <h2 id="profile-name"><a href="/about/">{profileConfig.name}</a></h2>
+      <span class="profile-divider" aria-hidden="true"></span>
+      <p class="profile-bio">{profileConfig.bio}</p>
+      <div class="profile-stats" aria-label="本站内容统计">
+        <a href="/archive/"><strong>{news.length}</strong><span>份日报</span></a>
+        <a href="/archive/"><strong>{briefCount}</strong><span>条新闻</span></a>
+      </div>
+      <a class="profile-rss btn-regular" href="/rss.xml"><Icon name="rss" size={17} />订阅 RSS</a>
+    </div>
+  </section>
+
+  <div class="sidebar-widgets">
+    <section class="sidebar-widget card-base" aria-labelledby="sidebar-categories-title">
+      <h2 id="sidebar-categories-title" class="widget-title">分类</h2>
+      <nav class="widget-links" aria-label="新闻分类">
+        {categories.map(({ topic, label, count }) => (
+          <a class="widget-link" href={`/topics/${topic}/`}>
+            <span>{label}</span><span class="count-badge" aria-label={`${count} 份日报`}>{count}</span>
+          </a>
+        ))}
+      </nav>
+    </section>
+
+    <section class="sidebar-widget card-base" aria-labelledby="sidebar-archive-title">
+      <h2 id="sidebar-archive-title" class="widget-title">归档</h2>
+      <nav class="widget-links month-links" aria-label="按月份浏览日报">
+        {months.map(({ month, label, count }) => (
+          <a class="widget-link" href={`/archive/?month=${month}`}>
+            <span>{label}</span><span class="count-badge" aria-label={`${count} 份日报`}>{count}</span>
+          </a>
+        ))}
+      </nav>
+      <a class="all-archives" href="/archive/">全部归档<Icon name="arrow" size={16} /></a>
+    </section>
+  </div>
+</aside>
+
+<style>
+  .fuwari-sidebar { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+  .profile-card { padding: 1.5rem 1.25rem 1.25rem; text-align: center; }
+  .profile-avatar { display: block; width: 160px; max-width: 100%; margin: 0 auto 1rem; border-radius: 50%; overflow: hidden; }
+  .profile-avatar img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; transition: transform .3s ease; }
+  .profile-avatar:hover img { transform: scale(1.06); }
+  .profile-details h2 { margin: 0; font-size: 1.35rem; font-weight: 700; color: var(--ink); }
+  .profile-details h2 a { color: inherit; }
+  .profile-divider { display: block; width: 1.5rem; height: .25rem; margin: .65rem auto .8rem; border-radius: 999px; background: var(--primary); }
+  .profile-bio { margin: 0; color: var(--muted); font-size: .85rem; line-height: 1.75; }
+  .profile-stats { display: grid; grid-template-columns: 1fr 1fr; margin: 1rem 0; }
+  .profile-stats a { display: flex; flex-direction: column; gap: .15rem; color: var(--muted); font-size: .75rem; }
+  .profile-stats a + a { border-left: 1px solid var(--line-color); }
+  .profile-stats strong { font-size: 1.2rem; color: var(--ink); line-height: 1.4; }
+  .profile-rss { display: inline-flex; justify-content: center; align-items: center; gap: .45rem; min-height: 2.5rem; padding: .5rem 1rem; font-size: .85rem; border-radius: .6rem; }
+  .sidebar-widgets { display: grid; gap: 1rem; }
+  .sidebar-widget { padding: 1rem .75rem .75rem; min-width: 0; }
+  .widget-title { position: relative; margin: 0 0 .6rem; padding-left: 1rem; color: var(--ink); font-size: 1rem; font-weight: 700; line-height: 1.5; }
+  .widget-title::before { position: absolute; content: ''; width: .25rem; height: 1rem; left: .25rem; top: .25rem; background: var(--primary); border-radius: 999px; }
+  .widget-links { display: grid; gap: .15rem; }
+  .widget-link { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .55rem .6rem; border-radius: .5rem; color: var(--muted); font-size: .85rem; transition: background .15s ease, color .15s ease; }
+  .widget-link:hover { background: var(--btn-regular-bg); color: var(--btn-content); }
+  .count-badge { display: inline-flex; justify-content: center; align-items: center; min-width: 1.7rem; height: 1.55rem; padding: 0 .4rem; border-radius: .4rem; background: var(--btn-regular-bg); color: var(--btn-content); font-size: .75rem; font-weight: 600; }
+  .month-links { max-height: 17rem; overflow-y: auto; scrollbar-width: thin; }
+  .all-archives { display: flex; justify-content: space-between; align-items: center; margin-top: .3rem; padding: .55rem .6rem; border-radius: .5rem; color: var(--primary); font-size: .8rem; }
+  .all-archives:hover { background: var(--btn-regular-bg); }
+  @media (max-width: 900px) {
+    .profile-card { display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem; text-align: left; }
+    .profile-avatar { flex: 0 0 104px; width: 104px; margin: 0; }
+    .profile-details { flex: 1; min-width: 0; }
+    .profile-details h2 { font-size: 1.1rem; }
+    .profile-divider { margin: .45rem 0 .6rem; }
+    .profile-stats { grid-template-columns: auto auto; justify-content: start; gap: 1rem; margin: .7rem 0; }
+    .profile-stats a { flex-direction: row; align-items: baseline; gap: .35rem; }
+    .profile-stats a + a { border: 0; }
+    .profile-stats strong { font-size: 1rem; }
+    .profile-rss { min-height: 2rem; padding: .35rem .7rem; font-size: .8rem; }
+    .sidebar-widgets { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .sidebar-widget { padding: .85rem .5rem .5rem; }
+    .month-links { max-height: 8rem; }
+  }
+  @media (max-width: 400px) {
+    .profile-card { gap: .85rem; padding: 1rem; }
+    .profile-avatar { flex-basis: 80px; width: 80px; }
+    .profile-bio { font-size: .8rem; }
+    .widget-link { padding: .5rem .35rem; font-size: .8rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .profile-avatar img, .widget-link { transition: none; }
+  }
+</style>

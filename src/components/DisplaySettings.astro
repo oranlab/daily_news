@@ -1,0 +1,62 @@
+---
+import Icon from './Icon.astro';
+import { siteConfig } from '../config';
+---
+<details class="display-settings">
+  <summary class="icon-button" aria-label="显示设置" title="显示设置"><Icon name="sun" /></summary>
+  <div class="settings-panel card-base">
+    <p class="settings-heading">显示设置</p>
+    <div class="theme-options" role="group" aria-label="深浅主题">
+      <button type="button" data-theme-mode="light" aria-pressed="false"><Icon name="sun" size={17} />浅色</button>
+      <button type="button" data-theme-mode="dark" aria-pressed="false"><Icon name="moon" size={17} />深色</button>
+      <button type="button" data-theme-mode="auto" aria-pressed="false">跟随系统</button>
+    </div>
+    {!siteConfig.themeColor.fixed && <div class="hue-control"><label for="theme-hue">主题色 <output id="hue-value">{siteConfig.themeColor.hue}°</output></label><input id="theme-hue" aria-label="主题色相" type="range" min="0" max="360" value={siteConfig.themeColor.hue} /></div>}
+  </div>
+</details>
+<script>
+  import { siteConfig } from '../config';
+  type ThemeMode = 'light' | 'dark' | 'auto';
+  const media = matchMedia('(prefers-color-scheme: dark)');
+  let mode: ThemeMode = 'auto';
+  try {
+    const saved = localStorage.getItem('daily-news-theme');
+    if (saved === 'light' || saved === 'dark' || saved === 'auto') mode = saved;
+  } catch {}
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-mode]');
+  function applyTheme() {
+    const dark = mode === 'dark' || (mode === 'auto' && media.matches);
+    document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#171b23' : '#f1f3f8');
+    buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.themeMode === mode)));
+  }
+  buttons.forEach((button) => button.addEventListener('click', () => {
+    mode = button.dataset.themeMode as ThemeMode;
+    try { localStorage.setItem('daily-news-theme', mode); } catch {}
+    applyTheme();
+  }));
+  media.addEventListener('change', applyTheme);
+  applyTheme();
+  const hue = document.querySelector<HTMLInputElement>('#theme-hue');
+  const output = document.querySelector<HTMLOutputElement>('#hue-value');
+  if (hue) {
+    hue.value = document.documentElement.style.getPropertyValue('--hue') || String(siteConfig.themeColor.hue);
+    if (output) output.value = `${hue.value}°`;
+    hue.addEventListener('input', () => {
+      document.documentElement.style.setProperty('--hue', hue.value);
+      if (output) output.value = `${hue.value}°`;
+      try { localStorage.setItem('daily-news-hue', hue.value); } catch {}
+    });
+  }
+  const settings = document.querySelector<HTMLDetailsElement>('.display-settings');
+  document.addEventListener('click', (event) => {
+    if (event.target instanceof Node && !settings?.contains(event.target)) settings?.removeAttribute('open');
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && settings?.open) {
+      settings.open = false;
+      settings.querySelector<HTMLElement>('summary')?.focus();
+    }
+  });
+</script>
