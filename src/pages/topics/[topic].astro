@@ -1,0 +1,19 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import Icon from '../../components/Icon.astro';
+import { getNews, getMetadata, topics, type Topic } from '../../lib/news';
+export const getStaticPaths = (() => Object.keys(topics).map((topic) => ({ params: { topic } }))) satisfies GetStaticPaths;
+const topic = Astro.params.topic as Topic;
+const info = topics[topic];
+const news = (await getNews()).filter((entry) => getMetadata(entry).briefs.some((brief) => brief.topic === topic));
+const latest = news[0];
+const edition = latest ? getMetadata(latest) : undefined;
+const highlights = edition?.briefs.filter((brief) => brief.topic === topic).slice(0, 3) ?? [];
+---
+<BaseLayout title={info.label} description={info.description}>
+  <section class="page-intro"><p class="eyebrow">{info.english}</p><h1>{info.label}<span class="accent">。</span></h1><p>{info.description}</p></section>
+  {edition && <section class="topic-highlights"><div class="section-heading"><h2>最新关注</h2><time datetime={edition.date}>{edition.date}</time></div><div class="topic-highlight-grid">{highlights.map((brief, index) => <a href={edition.href} class="topic-highlight"><span class="eyebrow">{String(index + 1).padStart(2, '0')} / {info.label}</span><h3>{brief.title}</h3><p>{brief.summary.slice(0, 125)}{brief.summary.length > 125 ? '…' : ''}</p><span class="text-link">阅读本期 <Icon name="arrow" size={16} /></span></a>)}</div></section>}
+  <div class="section-heading"><h2>相关日报</h2><span class="muted">共 {news.length} 份</span></div><div class="post-grid">{news.map((entry) => <PostCard entry={entry} topic={topic} />)}</div>{!news.length && <p class="empty-state">该分类的日报正在整理中。</p>}
+</BaseLayout>

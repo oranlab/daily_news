@@ -1,0 +1,17 @@
+---
+import type { NewsEntry } from '../lib/news';
+import { getMetadata, formatDate, weekday, type Topic } from '../lib/news';
+import Icon from './Icon.astro';
+interface Props { entry: NewsEntry; topic?: Topic }
+const { entry, topic } = Astro.props;
+const post = getMetadata(entry);
+const highlights = post.briefs.filter((brief) => !topic || brief.topic === topic).slice(0, 2);
+---
+<article class="post-card" data-post-id={entry.id}>
+  <div class="post-card-top"><time datetime={entry.id}>{formatDate(entry.id)}</time><span>{weekday(entry.id)}</span></div>
+  <a class="post-card-link" href={post.href}>
+    <h3>{post.title}</h3>
+    <p>{highlights.map((brief) => brief.title).join('；') || post.description}</p>
+    <div class="post-card-bottom"><span>{post.worldCount} 条国际 · {post.aiCount} 条 AI<span class="reading-time"> · {post.readingMinutes} 分钟</span></span><Icon name="arrow" /></div>
+  </a>
+</article>

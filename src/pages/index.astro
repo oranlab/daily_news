@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import PostCard from '../components/PostCard.astro';
+import { getNews, getMetadata, formatDate, weekday, topics, type Topic } from '../lib/news';
+const news = await getNews();
+const latest = news[0];
+const edition = latest ? getMetadata(latest) : undefined;
+const totalBriefs = news.reduce((sum, entry) => sum + getMetadata(entry).briefs.length, 0);
+---
+<BaseLayout>
+  <div class="edition-line"><span><span class="live-dot"></span>国际视野，AI 前沿</span><span>{edition ? `${formatDate(edition.date)} / ${weekday(edition.date)}` : '欢迎来到每日新闻'}</span></div>
+  <section class="home-hero">
+    <div><p class="eyebrow">A LITTLE READING. A WIDER WORLD.</p><h1>每天，读懂世界<br />的<span class="accent">新变化。</span></h1><p class="hero-description">从国际要闻到 AI 动态。<br />把值得关注的事，整理成一份有出处的每日阅读。</p><a class="text-link" href="/about/">认识这份日报 <Icon name="arrow" size={18} /></a></div>
+    <div class="hero-note"><span class="note-index">01 — THE DAILY HABIT</span><span class="note-mark" aria-hidden="true">“</span><p>在快速变化的世界里，<br />为理解留一点时间。</p><div class="hero-stats"><div><strong>{String(news.length).padStart(2, '0')}</strong><span>份每日归档</span></div><div><strong>{totalBriefs}</strong><span>条新闻记录</span></div><div><strong>UTC+8</strong><span>北京时间</span></div></div></div>
+  </section>
+  {edition && <section class="latest-section" aria-labelledby="latest-heading">
+    <div class="section-heading"><h2 id="latest-heading"><span class="live-dot"></span>最新一期</h2><span class="eyebrow">THE LATEST EDITION</span></div>
+    <div class="latest-grid">
+      <a class="edition-cover" href={edition.href}><span class="eyebrow">DAILY BRIEF / {edition.date.slice(0, 4)}</span><span class="cover-month">{edition.date.slice(5, 7)}月</span><span class="cover-day">{edition.date.slice(8, 10)}</span><span class="cover-caption">{weekday(edition.date)} · {edition.briefs.length} 条新闻</span><span class="cover-link">阅读完整日报 <Icon name="arrow" /></span></a>
+      <div class="latest-content"><div class="latest-meta"><span>国际 + AI</span><span>约 {edition.readingMinutes} 分钟阅读</span></div><h3><a href={edition.href}>{edition.title}</a></h3><div class="highlight-grid">{(Object.keys(topics) as Topic[]).map((topic) => {
+        const brief = edition.briefs.find((item) => item.topic === topic);
+        return <div class="highlight"><a class="topic-label" href={`/topics/${topic}/`}>{topics[topic].label}<span>↗</span></a>{brief ? <><h4>{brief.title}</h4><p>{brief.summary.slice(0, 112)}{brief.summary.length > 112 ? '…' : ''}</p></> : <p>本期暂无该分类条目。</p>}</div>;
+      })}</div><a class="text-link" href={edition.href}>打开本期阅读 <Icon name="arrow" size={18} /></a></div>
+    </div>
+  </section>}
+  <section class="recent-section" aria-labelledby="recent-heading"><div class="section-heading"><h2 id="recent-heading">往期阅读<span class="heading-note">每天一份，慢慢积累。</span></h2><a class="text-link" href="/archive/">全部归档 <Icon name="arrow" size={17} /></a></div><div class="post-grid">{news.slice(1, 7).map((entry) => <PostCard entry={entry} />)}</div>{news.length <= 1 && <p class="empty-state">新的阅读正在积累，下一份日报见。</p>}</section>
+  <aside class="subscribe-band"><div><p class="eyebrow">KEEP YOUR CURIOSITY.</p><h2>让好奇心，成为每日习惯。</h2><p>通过 RSS，在你喜欢的阅读器里接收每一期。</p></div><a class="button" href="/rss.xml"><Icon name="rss" size={18} />订阅每日新闻 <Icon name="arrow" size={18} /></a></aside>
+</BaseLayout>

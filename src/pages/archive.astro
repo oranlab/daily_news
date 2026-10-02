@@ -1,0 +1,66 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import Icon from '../components/Icon.astro';
+import { getNews } from '../lib/news';
+const news = await getNews();
+const months = [...new Set(news.map((entry) => entry.id.slice(0, 7)))];
+---
+<BaseLayout title="往期归档" description="按日期浏览每日新闻，搜索国际要闻与 AI 新闻全文。">
+  <section class="page-intro"><p class="eyebrow">THE ARCHIVE</p><h1>每一天，都有记录<span class="accent">。</span></h1><p>回看世界与 AI 的变化。从这里，找到你想读的那一天。</p></section>
+  <section class="archive-tools" aria-label="归档筛选"><div class="search-field"><Icon name="search" /><label class="sr-only" for="search">搜索日期、标题或正文</label><input id="search" type="search" placeholder="搜索日期、标题或正文…" autocomplete="off" /></div><label class="sr-only" for="month">按月份筛选</label><select id="month"><option value="">全部月份</option>{months.map((month) => <option value={month}>{month.replace('-', ' 年 ')} 月</option>)}</select></section>
+  <div class="archive-status"><p id="result-count" role="status" aria-live="polite">共 {news.length} 份日报 · 按日期倒序</p><button id="reset-search" type="button" class="text-button" hidden>清除筛选</button></div>
+  <div class="post-grid archive-grid">{news.map((entry) => <PostCard entry={entry} />)}</div>
+  <p class="empty-state" id="no-results" hidden>没有找到匹配的日报，试试其他关键词或月份。</p>
+  <noscript><p class="notice">所有日报均可直接阅读。全文搜索和月份筛选需要启用 JavaScript。</p></noscript>
+  <script>
+    interface SearchEntry { id: string; text: string }
+    const input = document.querySelector<HTMLInputElement>('#search')!;
+    const month = document.querySelector<HTMLSelectElement>('#month')!;
+    const reset = document.querySelector<HTMLButtonElement>('#reset-search')!;
+    const count = document.querySelector<HTMLElement>('#result-count')!;
+    const empty = document.querySelector<HTMLElement>('#no-results')!;
+    const cards = [...document.querySelectorAll<HTMLElement>('[data-post-id]')];
+    let index: Map<string, string> | undefined;
+    let pending: Promise<void> | undefined;
+    let failed = false;
+    const loadIndex = () => pending ??= fetch('/search-index.json').then(async (response) => {
+      if (!response.ok) throw new Error('搜索索引加载失败');
+      const entries: SearchEntry[] = await response.json();
+      index = new Map(entries.map((entry) => [entry.id, entry.text.toLocaleLowerCase()]));
+      failed = false;
+    }).catch(() => { failed = true; pending = undefined; });
+    async function filter() {
+      if (input.value.trim() && !index) {
+        count.textContent = '正在加载全文搜索…';
+        await loadIndex();
+      }
+      const query = input.value.trim().toLocaleLowerCase();
+      const terms = query.split(/\s+/).filter(Boolean);
+      let visible = 0;
+      for (const card of cards) {
+        const id = card.dataset.postId!;
+        const text = index?.get(id) ?? `${id} ${card.textContent ?? ''}`.toLocaleLowerCase();
+        const matches = (!month.value || id.startsWith(month.value)) && terms.every((term) => text.includes(term));
+        card.hidden = !matches;
+        if (matches) visible++;
+      }
+      count.textContent = `${visible} / ${cards.length} 份日报${failed && query ? ' · 全文索引暂不可用，已搜索标题与摘要' : ' · 按日期倒序'}`;
+      empty.hidden = visible > 0;
+      reset.hidden = !query && !month.value;
+      const params = new URLSearchParams();
+      if (query) params.set('q', input.value.trim());
+      if (month.value) params.set('month', month.value);
+      history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+    }
+    input.addEventListener('input', () => void filter());
+    month.addEventListener('change', () => void filter());
+    reset.addEventListener('click', () => { input.value = ''; month.value = ''; void filter(); input.focus(); });
+    const params = new URLSearchParams(location.search);
+    input.value = params.get('q') ?? '';
+    const selectedMonth = params.get('month');
+    if (selectedMonth && [...month.options].some((option) => option.value === selectedMonth)) month.value = selectedMonth;
+    if (input.value || month.value) void filter();
+    if (location.hash === '#search') input.focus();
+  </script>
+</BaseLayout>
