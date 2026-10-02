@@ -4,7 +4,7 @@ import { z } from 'astro/zod';
 
 const news = defineCollection({
   loader: glob({
-    base: '.',
+    base: './src/content',
     pattern: '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/每日新闻.md',
     retainBody: true,
     generateId: ({ entry }) => {
